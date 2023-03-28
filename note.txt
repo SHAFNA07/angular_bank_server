@@ -1,0 +1,43 @@
+Server Creation
+...............
+
+1.npm init
+2.install express    npm i express
+
+
+steps
+.....
+
+1.import express
+2.create app using express
+3.setting port to run the app (3000)
+
+
+
+JWT (JSON Web Token)
+...................
+
+user authentication
+jsonwebtoken -library used to generate Tokens
+sign()  -method to generate Token
+verify () -method used to token Verification
+ 
+
+Tokn Verification
+.................
+
+MiddleWears
+...........
+
+-its a function  with 3 arguments  (req,res,next)
+-have the capacity to control http requests in node
+
+ two types of MiddleWears
+    
+     1. Application Specific MiddleWears  -it happens before all the http methods 
+     2. Router Specific MiddleWears  - can apply only to the Specific requests
+
+
+     -next()
+-method used inside MiddleWearsto continue  node  execution
+
