@@ -1,47 +1,49 @@
 const jwt=require("jsonwebtoken")
+const db=require('./db')
 
 
-userDetails = {
-    1000: { Username: "lulu", acno: 1000, password: "abc121", balance: 0, transaction: [] },
-    1001: { Username: "anu", acno: 1001, password: "abc122", balance: 0, transaction: [] },
-    1002: { Username: "amal", acno: 1002, password: "abc123", balance: 0, transaction: [] },
-    1003: { Username: "shaf", acno: 1003, password: "abc124", balance: 0, transaction: [] },
-    1004: { Username: "ish", acno: 1004, password: "abc125", balance: 0, transaction: [] }
-}
+register = (acno, uname, psw)=> {
+                  
+    //store the resolved output of findOne in a variable user
 
-register = (acno, uname, psw) => {
+    return db.User.findOne({acno}).then(user=>{
 
-    if (acno in userDetails) {
-        return {
-
-            status: false,
+        //if acno present in db then get the object of that user else null response
+        if(user)
+        {
+            return{
+                status: false,
             message: "user already present",
             statusCode: 404
+            }
         }
-    }
 
-    else {
-        userDetails[acno] = { Username: uname, acno, password: psw, balance: 0, transaction: [] }
-        return {
-            status: true,
-            message: "registered",
-            statusCode: 200
+        else{
+           newUser=new db.User({
+                username:uname,
+                acno,
+                password:psw,
+                balance:0,
+                transaction:[]
+            })
+
+            newUser.save()
+            return{
+                status: true,
+                message: "registered",
+                statusCode: 200
+            }
         }
-    }
+    })
 }
+
  login=(acno,psw)=>{
-    if(acno in userDetails)
-    {
-        if (psw==userDetails[acno]["password"])
+    return db.User.findOne({acno,password:psw}).then(user=>{
+        if(user)
         {
-            currentUser=userDetails[acno]["Username"]
+            currentUser=user.username
             currentAcno=acno
-
-            //token create
-             const token =jwt.sign({acno},"superkey123") 
-             
-
-
+            const token =jwt.sign({acno},"superkey123") 
             return{
                 status:true,
                 message:"login success",
@@ -51,24 +53,17 @@ register = (acno, uname, psw) => {
                 token
             }
         }
-            else
-            {
-                return{
-                    status:false,
-                    message:"incorrect password",
-                    statusCode:404
-            }
+        
+        else
+        {
+            return{
+                status:false,
+                message:"incorrect acno or password",
+                statusCode:404
         }
-
     }
-
-    else{
-        return{
-            status:false,
-            message:"not registered yet",
-            statusCode:404
-    }
-}
+    })
+    
  }
                  
 
@@ -78,36 +73,30 @@ register = (acno, uname, psw) => {
 deposit=(acno,psw,amnt)=>{
 
 var amount=parseInt(amnt)
+return db.User.findOne({acno,password:psw}).then(user=>{
 
-    if(acno in userDetails)
-     {
-    if(psw==userDetails[acno]["password"]) 
+    if(user)
     {
-userDetails[acno]["balance"]+=amount
-// add transaction data
- userDetails[acno]["transaction"].push({Type:"Credit",Amount:amount})
- return{
-    status:true,
-    message:`your ac has been credited with amount ${amount} and the balance is ${userDetails[acno]["balance"]}`,
-    statusCode:200
- }
+        user.balance+=amount
+       user.transactions.push({Type:"credit",Amount:amnt})
+        user.save()
+        return{
+            status:true,
+            message:`your ac has been credited with amount ${amount} and the balance is ${user.balance}`,
+            statusCode:200
+         }
     }
     else
     {
         return{
             status:false,
-            message:"incorrect password",
+            message:"incorrect acno or password",
             statusCode:404
     }
     }
-}
-     else{
-        return{
-            status:false,
-            message:"incorrect acno",
-            statusCode:404
-    }
-     }
+})
+
+
 }
 
 // //withdraw patch
@@ -116,53 +105,41 @@ userDetails[acno]["balance"]+=amount
 withdraw=(acno,psw,amnt)=>{
 
     var amount=parseInt(amnt)
-    
-        if(acno in userDetails)
-         {
-        if(psw==userDetails[acno]["password"]) 
-        {
-            if(amount<=userDetails[acno]["balance"])
+    return db.User.findOne({acno,password:psw}).then(user=>{
+        
+            if(user)
             {
-                userDetails[acno]["balance"]-=amount
-                // add transaction data
-                 userDetails[acno]["transaction"].push({Type:"debit",Amount:amnt})
-                 return{
-                    status:true,
-                    message:`your ac has been debited with amount ${amount} and the balance is ${userDetails[acno]["balance"]}`,
+                if(user.balance>=amount)
+                {
+                    user.balance-=amount
+                    user.transactions.push({Type:"debit",Amount:amount})
+                    user.save()
+                    return{
+                        status:true,
+                    message:`your ac has been debited with amount ${amount} and the balance is ${user.balance}`,
                     statusCode:200
-                 }
-            }
+                    }
 
-            else
-           {
-            return{
-                status:false,
+                }
+
+                else{
+                    return{
+                        status:false,
                 message:"insufficient balance",
                 statusCode:404
-              }
-           }
-    
-        }
-
+                    }
+                }
+            }           
         else
         {
          return{
              status:false,
-             message:"incorrect password",
+             message:"incorrect  acno or password",
              statusCode:404
            }
         }
         
-    }
-    else
-    {
-     return{
-         status:false,
-         message:"incorrect acno",
-         statusCode:404
-       }
-    }
-         
+    })       
  }
     
      
@@ -171,20 +148,47 @@ withdraw=(acno,psw,amnt)=>{
     
     
     getTransaction=(acno)=>{
-        return {
-            status:true,
-            transaction:userDetails[acno].transaction,
-            statusCode: 200
-    
-        }
+        return db.User.findOne({acno}).then(user=>{
+
+if (user)
+{
+    return {
+        status:true,
+        transactions:user.transactions,
+        statusCode: 200
     }
+        
+}
+    })
+}
     
     // //delete delete
+
+
+    deleteAcc=(acno)=>{
+        return db.User.deleteOne({acno}).then(user=>{
+            if(user)
+            {
+                return {
+                    status:true,
+                    message:"ac deleted",
+                    statusCode: 200
+                }  
+            }
+            else{
+                return{
+                    status:false,
+                    message:"ac not present",
+                    statusCode:401
+                  }
+            }
+        })
+    }
     
     // //resolve api
     
     
     
     module.exports = {
-        register,login, deposit,withdraw,getTransaction
+        register,login, deposit,withdraw,getTransaction,deleteAcc
     }

@@ -1,8 +1,12 @@
 // //import express and store in a variable
-const express= require("express")
+const express=require("express")
+
+//import cors
+
+const cors=require("cors")
 
 
-// //import  ds
+ //import  ds
 
 const ds=require('./service/dataservice')
 
@@ -13,6 +17,10 @@ const jwt=require ("jsonwebtoken")
 // //app creation
 
 const app=express()
+
+//integrate app with frontend
+
+app.use(cors({origin:'http://localhost:4200'}))
 
 // //to convert all datas from json to js
 
@@ -52,9 +60,9 @@ const app=express()
 
 app.post("/register",(req,res)=>{
      
-    const result= ds.register(req.body.acno,req.body.uname,req.body.psw)
-    
-    res.status(result.statusCode).json(result)
+     ds.register(req.body.acno,req.body.uname,req.body.psw).then(result=>{
+        res.status(result.statusCode).json(result)
+     })   
  })
 
 // //login get
@@ -62,9 +70,12 @@ app.post("/register",(req,res)=>{
 
 app.post("/login",(req,res)=>{
      
-    const result= ds.login(req.body.acno,req.body.psw)
+    ds.login(req.body.acno,req.body.psw).then(result=>{
+
+        res.status(result.statusCode).json(result)
+    })
     
-    res.status(result.statusCode).json(result)
+   
  })
 
 
@@ -72,9 +83,9 @@ app.post("/login",(req,res)=>{
 
 app.post("/deposit",jwtMiddleware,(req,res)=>{
      
-    const result= ds.deposit(req.body.acno,req.body.psw,req.body.amnt)
-    
-    res.status(result.statusCode).json(result)
+    ds.deposit(req.body.acno,req.body.psw,req.body.amnt).then(result=>{
+        res.status(result.statusCode).json(result)
+    })  
  })
 
 
@@ -82,18 +93,31 @@ app.post("/deposit",jwtMiddleware,(req,res)=>{
 
 app.post("/withdraw",jwtMiddleware,(req,res)=>{
      
-    const result= ds.withdraw(req.body.acno,req.body.psw,req.body.amnt)
+    ds.withdraw(req.body.acno,req.body.psw,req.body.amnt).then(result=>{ 
+        res.status(result.statusCode).json(result)
+    })
     
-    res.status(result.statusCode).json(result)
+    
  })
 
 // //transaction get
 
-app.get("/transaction",jwtMiddleware,(req,res)=>{
+app.post("/transaction",jwtMiddleware,(req,res)=>{
      
-    const result= ds.getTransaction(req.body.acno)
-    
-    res.status(result.statusCode).json(result)
+    ds.getTransaction(req.body.acno).then(result=>{
+        res.json(result)
+
+    })
+ })
+
+
+ app.delete("/delete:acno",jwtMiddleware,(req,res)=>{
+     
+    ds.deleteAcc(req.params.acno).then(result=>{
+        res.status(res.statusCode).json(result)
+
+    })
+
  })
 
 // //delete delete
